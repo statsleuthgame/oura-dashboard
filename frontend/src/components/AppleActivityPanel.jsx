@@ -14,27 +14,34 @@ export default function AppleActivityPanel() {
 
   return (
     <PanelWrapper title="Activity" loading={loading} error={error}>
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-4">
         <MetricCard
           label="Avg Daily Steps"
           value={steps?.summary?.avg_daily_steps ? formatNumber(Math.round(steps.summary.avg_daily_steps)) : null}
           color="text-apple-green"
         />
         <MetricCard
-          label="Total Steps"
-          value={steps?.summary?.total_steps ? formatNumber(steps.summary.total_steps) : null}
-          color="text-white"
-        />
-        <MetricCard
           label="Avg Active Cal"
-          value={roundTo(energy?.summary?.avg_active_cal)}
+          value={energy?.summary?.avg_active_cal ? formatNumber(Math.round(energy.summary.avg_active_cal)) : null}
           unit="cal"
           color="text-apple-red"
         />
         <MetricCard
+          label="Avg Total Cal"
+          value={energy?.summary?.avg_total_cal ? formatNumber(Math.round(energy.summary.avg_total_cal)) : null}
+          unit="cal"
+          color="text-apple-orange"
+        />
+        <MetricCard
+          label="Avg Distance"
+          value={steps?.summary?.avg_distance ? `${(steps.summary.avg_distance * 0.621371).toFixed(1)}` : null}
+          unit="mi"
+          color="text-apple-blue"
+        />
+        <MetricCard
           label="Total Flights"
           value={steps?.summary?.total_flights ? formatNumber(steps.summary.total_flights) : null}
-          color="text-apple-orange"
+          color="text-white"
         />
       </div>
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

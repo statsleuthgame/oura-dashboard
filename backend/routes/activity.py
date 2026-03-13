@@ -8,10 +8,10 @@ router = APIRouter(prefix="/api")
 
 
 @router.get("/activity", response_model=ActivityResponse)
-async def get_activity(request: Request, days: int = Query(default=7, ge=1, le=2200)):
-    days = min(days, 90)  # Oura API only supports up to 90 days
+async def get_activity(request: Request, days: int = Query(default=7, ge=0, le=2200)):
+    effective = days if days > 0 else 2200
     end_date = date.today().isoformat()
-    start_date = (date.today() - timedelta(days=days)).isoformat()
+    start_date = (date.today() - timedelta(days=effective)).isoformat()
 
     raw = await request.app.state.oura.fetch(
         "/v2/usercollection/daily_activity", start_date, end_date

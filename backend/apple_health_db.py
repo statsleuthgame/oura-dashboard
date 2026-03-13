@@ -27,6 +27,13 @@ def _group_clause(days: int) -> str:
     return "DATE(start_date)"
 
 
+def _day_select(days: int) -> str:
+    """Return a SQL expression for the display date (proper date even for weekly)."""
+    if _use_weekly(days):
+        return "MIN(DATE(start_date))"
+    return "DATE(start_date)"
+
+
 def _date_filter(days: int) -> tuple[str, tuple]:
     """Return (WHERE clause, params) for date filtering."""
     dr = _date_range(days)
@@ -37,9 +44,10 @@ def _date_filter(days: int) -> tuple[str, tuple]:
 
 def query_daily_heart_rate(conn: sqlite3.Connection, days: int) -> list[dict]:
     group = _group_clause(days)
+    day_sel = _day_select(days)
     where, params = _date_filter(days)
     rows = conn.execute(
-        f"SELECT {group} as day, AVG(value) as avg_hr, MIN(value) as min_hr, MAX(value) as max_hr "
+        f"SELECT {day_sel} as day, AVG(value) as avg_hr, MIN(value) as min_hr, MAX(value) as max_hr "
         f"FROM heart_rate {where} GROUP BY {group} ORDER BY day",
         params,
     ).fetchall()
@@ -48,9 +56,10 @@ def query_daily_heart_rate(conn: sqlite3.Connection, days: int) -> list[dict]:
 
 def query_daily_hrv(conn: sqlite3.Connection, days: int) -> list[dict]:
     group = _group_clause(days)
+    day_sel = _day_select(days)
     where, params = _date_filter(days)
     rows = conn.execute(
-        f"SELECT {group} as day, AVG(value) as avg_hrv, MIN(value) as min_hrv, MAX(value) as max_hrv "
+        f"SELECT {day_sel} as day, AVG(value) as avg_hrv, MIN(value) as min_hrv, MAX(value) as max_hrv "
         f"FROM hrv {where} GROUP BY {group} ORDER BY day",
         params,
     ).fetchall()
@@ -59,9 +68,10 @@ def query_daily_hrv(conn: sqlite3.Connection, days: int) -> list[dict]:
 
 def query_daily_resting_hr(conn: sqlite3.Connection, days: int) -> list[dict]:
     group = _group_clause(days)
+    day_sel = _day_select(days)
     where, params = _date_filter(days)
     rows = conn.execute(
-        f"SELECT {group} as day, AVG(value) as resting_hr "
+        f"SELECT {day_sel} as day, AVG(value) as resting_hr "
         f"FROM resting_heart_rate {where} GROUP BY {group} ORDER BY day",
         params,
     ).fetchall()
@@ -71,12 +81,13 @@ def query_daily_resting_hr(conn: sqlite3.Connection, days: int) -> list[dict]:
 def _source_dedup_sum(conn: sqlite3.Connection, table: str, days: int) -> list[dict]:
     """Sum by day+source, then take the max source total per day."""
     group = _group_clause(days)
+    day_sel = _day_select(days)
     where, params = _date_filter(days)
     rows = conn.execute(
-        f"SELECT grp as day, MAX(src_total) as value FROM ("
-        f"  SELECT {group} as grp, source, SUM(value) as src_total "
+        f"SELECT MIN(grp_day) as day, MAX(src_total) as value FROM ("
+        f"  SELECT {group} as grp, {day_sel} as grp_day, source, SUM(value) as src_total "
         f"  FROM {table} {where} GROUP BY grp, source"
-        f") GROUP BY grp ORDER BY grp",
+        f") GROUP BY grp ORDER BY day",
         params,
     ).fetchall()
     return [dict(r) for r in rows]
@@ -184,9 +195,10 @@ def _weekly_avg_sleep(daily: list[dict]) -> list[dict]:
 
 def query_daily_respiratory(conn: sqlite3.Connection, days: int) -> list[dict]:
     group = _group_clause(days)
+    day_sel = _day_select(days)
     where, params = _date_filter(days)
     rows = conn.execute(
-        f"SELECT {group} as day, AVG(value) as avg_rate "
+        f"SELECT {day_sel} as day, AVG(value) as avg_rate "
         f"FROM respiratory_rate {where} GROUP BY {group} ORDER BY day",
         params,
     ).fetchall()
@@ -195,9 +207,10 @@ def query_daily_respiratory(conn: sqlite3.Connection, days: int) -> list[dict]:
 
 def query_daily_spo2(conn: sqlite3.Connection, days: int) -> list[dict]:
     group = _group_clause(days)
+    day_sel = _day_select(days)
     where, params = _date_filter(days)
     rows = conn.execute(
-        f"SELECT {group} as day, AVG(value * 100) as avg_spo2, MIN(value * 100) as min_spo2 "
+        f"SELECT {day_sel} as day, AVG(value * 100) as avg_spo2, MIN(value * 100) as min_spo2 "
         f"FROM oxygen_saturation {where} GROUP BY {group} ORDER BY day",
         params,
     ).fetchall()

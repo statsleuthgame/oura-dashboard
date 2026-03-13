@@ -9,11 +9,15 @@ import AppleActivityPanel from "./components/AppleActivityPanel";
 import AppleSleepPanel from "./components/AppleSleepPanel";
 import AppleWorkoutsPanel from "./components/AppleWorkoutsPanel";
 import AppleVitalsPanel from "./components/AppleVitalsPanel";
+import InsightsPanel from "./components/InsightsPanel";
 
 export default function App() {
   return (
     <DateRangeProvider>
       <Layout>
+        {/* AI Insights */}
+        <InsightsPanel />
+
         {/* Oura Ring */}
         <div className="space-y-6">
           <div className="flex items-center gap-3">

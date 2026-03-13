@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     oura_base_url: str = "https://api.ouraring.com"
     apple_health_export_path: str = "../apple_health_export/export.xml"
     apple_health_db_path: str = "./apple_health.db"
+    anthropic_api_key: str = ""
 
     model_config = SettingsConfigDict(env_file=".env")
 

@@ -11,7 +11,7 @@ from oura_client import OuraClient
 from apple_health_parser import parse_export, is_parsed
 from apple_health_db import get_connection
 from routes import sleep, readiness, activity, heartrate, correlations
-from routes import apple_heart, apple_activity, apple_sleep, apple_workouts, apple_vitals, apple_parse
+from routes import apple_heart, apple_activity, apple_sleep, apple_workouts, apple_vitals, apple_parse, insights
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -78,3 +78,6 @@ app.include_router(apple_sleep.router)
 app.include_router(apple_workouts.router)
 app.include_router(apple_vitals.router)
 app.include_router(apple_parse.router)
+
+# AI Insights
+app.include_router(insights.router)

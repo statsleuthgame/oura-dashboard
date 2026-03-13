@@ -9,10 +9,12 @@ router = APIRouter(prefix="/api")
 
 
 @router.get("/heartrate", response_model=HeartRateResponse)
-async def get_heartrate(request: Request, days: int = Query(default=7, ge=1, le=2200)):
-    days = min(days, 90)  # Oura API only supports up to 90 days
+async def get_heartrate(request: Request, days: int = Query(default=7, ge=0, le=2200)):
+    # Oura HR is per-5-min readings — cap at 90 days to avoid massive payloads
+    # Apple Health HR covers long-range history instead
+    effective = min(days, 90) if days > 0 else 90
     end_date = date.today().isoformat()
-    start_date = (date.today() - timedelta(days=days)).isoformat()
+    start_date = (date.today() - timedelta(days=effective)).isoformat()
 
     raw = await request.app.state.oura.fetch(
         "/v2/usercollection/heartrate", start_date, end_date

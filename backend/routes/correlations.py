@@ -22,8 +22,8 @@ METRIC_KEYS = [
 
 
 @router.get("/correlations", response_model=CorrelationsResponse)
-async def get_correlations(request: Request, days: int = Query(default=30, ge=7, le=2200)):
-    oura_days = min(days, 90)
+async def get_correlations(request: Request, days: int = Query(default=30, ge=0, le=2200)):
+    oura_days = days if days > 0 else 2200
     end_date = date.today().isoformat()
     start_date = (date.today() - timedelta(days=oura_days)).isoformat()
 
@@ -73,8 +73,7 @@ async def get_correlations(request: Request, days: int = Query(default=30, ge=7,
     # Add Apple Health data if available
     apple_db = request.app.state.apple_db
     if apple_db is not None:
-        # Use same day range as Oura for fair correlation
-        apple_days = oura_days
+        apple_days = days
 
         for row in query_daily_heart_rate(apple_db, apple_days):
             day = row["day"]
