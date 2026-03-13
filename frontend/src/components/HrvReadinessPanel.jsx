@@ -3,14 +3,10 @@ import PanelWrapper from "./PanelWrapper";
 import MetricCard from "./MetricCard";
 import ReadinessScoreChart from "./ReadinessScoreChart";
 import HrvTrendChart from "./HrvTrendChart";
-import HeartRateChart from "./HeartRateChart";
 
 export default function HrvReadinessPanel() {
-  const { data: readiness, loading: rLoad, error: rErr } = useOuraData("/readiness");
-  const { data: hr, loading: hrLoad, error: hrErr } = useOuraData("/heartrate");
+  const { data: readiness, loading, error } = useOuraData("/readiness");
 
-  const loading = rLoad || hrLoad;
-  const error = rErr || hrErr;
   const summary = readiness?.summary;
   const daily = readiness?.daily || [];
 
@@ -38,7 +34,6 @@ export default function HrvReadinessPanel() {
         <ReadinessScoreChart data={daily} />
         <HrvTrendChart data={daily} />
       </div>
-      <HeartRateChart data={hr?.data || []} />
     </PanelWrapper>
   );
 }

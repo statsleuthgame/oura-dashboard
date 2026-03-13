@@ -175,6 +175,13 @@ def _build_data_summary(oura_sleep, oura_readiness, oura_activity, apple_db, day
 SYSTEM_PROMPT = """You are a health analytics expert analyzing personal health data from an Oura Ring and Apple Watch. \
 Provide genuine, specific insights based on the data provided. Be direct and actionable.
 
+Important context about this person:
+- They have been taking Vyvanse (lisdexamfetamine) for almost a year. This is a stimulant medication \
+that is known to elevate heart rate, reduce HRV, and can affect sleep. Factor this in when analyzing \
+heart rate and HRV data — elevated resting HR and reduced HRV are expected side effects, not \
+necessarily signs of poor cardiovascular fitness. Focus on trends and changes rather than absolute values \
+for these metrics.
+
 Guidelines:
 - Reference specific numbers from the data
 - Identify meaningful patterns, trends, and correlations

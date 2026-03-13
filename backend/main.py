@@ -10,7 +10,7 @@ from config import get_settings
 from oura_client import OuraClient
 from apple_health_parser import parse_export, is_parsed
 from apple_health_db import get_connection
-from routes import sleep, readiness, activity, heartrate, correlations
+from routes import sleep, readiness, activity, correlations
 from routes import apple_heart, apple_activity, apple_sleep, apple_workouts, apple_vitals, apple_parse, insights
 
 logging.basicConfig(level=logging.INFO)
@@ -68,7 +68,6 @@ app.add_middleware(
 app.include_router(sleep.router)
 app.include_router(readiness.router)
 app.include_router(activity.router)
-app.include_router(heartrate.router)
 app.include_router(correlations.router)
 
 # Apple Health routes

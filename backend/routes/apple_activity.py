@@ -46,5 +46,6 @@ async def get_apple_energy(request: Request, days: int = Query(default=30, ge=0,
         avg_active_cal=round(sum(active) / len(active), 1) if active else None,
         avg_basal_cal=round(sum(basal) / len(basal), 1) if basal else None,
         avg_total_cal=round(sum(total) / len(total), 1) if total else None,
+        total_calories=round(sum(total)),
     )
     return AppleEnergyResponse(summary=summary, daily=daily)

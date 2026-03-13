@@ -92,6 +92,7 @@ class AppleEnergySummary(BaseModel):
     avg_active_cal: float | None = None
     avg_basal_cal: float | None = None
     avg_total_cal: float | None = None
+    total_calories: int = 0
 
 
 class AppleEnergyResponse(BaseModel):
