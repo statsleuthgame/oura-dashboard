@@ -1,5 +1,6 @@
 import DateRangeSelector from "./DateRangeSelector";
 import AppleParseStatus from "./AppleParseStatus";
+import UserToggle from "./UserToggle";
 
 export default function Layout({ children }) {
   return (
@@ -17,7 +18,10 @@ export default function Layout({ children }) {
               <AppleParseStatus />
             </div>
           </div>
-          <DateRangeSelector />
+          <div className="flex items-center gap-3">
+            <UserToggle />
+            <DateRangeSelector />
+          </div>
         </div>
       </header>
       <main className="max-w-7xl mx-auto px-4 sm:px-6 py-6 space-y-6">

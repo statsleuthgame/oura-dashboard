@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Query, Request, HTTPException
+from fastapi import APIRouter, Query, Request
 
 from apple_health_db import query_daily_heart_rate, query_daily_hrv, query_daily_resting_hr
 from apple_health_schemas import (
@@ -6,20 +6,14 @@ from apple_health_schemas import (
     AppleHrvDay, AppleHrvSummary, AppleHrvResponse,
     AppleRestingHrDay, AppleRestingHrSummary, AppleRestingHrResponse,
 )
+from user_dep import get_apple_db
 
 router = APIRouter(prefix="/api")
 
 
-def _get_db(request: Request):
-    db = request.app.state.apple_db
-    if db is None:
-        raise HTTPException(status_code=503, detail="Apple Health data is being parsed. Check /api/apple/parse/status")
-    return db
-
-
 @router.get("/apple/heart-rate", response_model=AppleHeartRateResponse)
-async def get_apple_heart_rate(request: Request, days: int = Query(default=30, ge=0, le=2200)):
-    conn = _get_db(request)
+async def get_apple_heart_rate(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
     rows = query_daily_heart_rate(conn, days)
     daily = [AppleHeartRateDay(day=r["day"], avg_hr=round(r["avg_hr"], 1), min_hr=round(r["min_hr"]), max_hr=round(r["max_hr"])) for r in rows]
 
@@ -34,8 +28,8 @@ async def get_apple_heart_rate(request: Request, days: int = Query(default=30, g
 
 
 @router.get("/apple/hrv", response_model=AppleHrvResponse)
-async def get_apple_hrv(request: Request, days: int = Query(default=30, ge=0, le=2200)):
-    conn = _get_db(request)
+async def get_apple_hrv(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
     rows = query_daily_hrv(conn, days)
     daily = [AppleHrvDay(day=r["day"], avg_hrv=round(r["avg_hrv"], 1), min_hrv=round(r["min_hrv"], 1), max_hrv=round(r["max_hrv"], 1)) for r in rows]
 
@@ -48,8 +42,8 @@ async def get_apple_hrv(request: Request, days: int = Query(default=30, ge=0, le
 
 
 @router.get("/apple/resting-hr", response_model=AppleRestingHrResponse)
-async def get_apple_resting_hr(request: Request, days: int = Query(default=30, ge=0, le=2200)):
-    conn = _get_db(request)
+async def get_apple_resting_hr(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
     rows = query_daily_resting_hr(conn, days)
     daily = [AppleRestingHrDay(day=r["day"], resting_hr=round(r["resting_hr"], 1)) for r in rows]
 

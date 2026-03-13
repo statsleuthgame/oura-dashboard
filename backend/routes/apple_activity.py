@@ -1,24 +1,18 @@
-from fastapi import APIRouter, Query, Request, HTTPException
+from fastapi import APIRouter, Query, Request
 
 from apple_health_db import query_daily_steps, query_daily_energy
 from apple_health_schemas import (
     AppleStepsDay, AppleStepsSummary, AppleStepsResponse,
     AppleEnergyDay, AppleEnergySummary, AppleEnergyResponse,
 )
+from user_dep import get_apple_db
 
 router = APIRouter(prefix="/api")
 
 
-def _get_db(request: Request):
-    db = request.app.state.apple_db
-    if db is None:
-        raise HTTPException(status_code=503, detail="Apple Health data is being parsed. Check /api/apple/parse/status")
-    return db
-
-
 @router.get("/apple/steps", response_model=AppleStepsResponse)
-async def get_apple_steps(request: Request, days: int = Query(default=30, ge=0, le=2200)):
-    conn = _get_db(request)
+async def get_apple_steps(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
     rows = query_daily_steps(conn, days)
     daily = [AppleStepsDay(**r) for r in rows]
 
@@ -34,8 +28,8 @@ async def get_apple_steps(request: Request, days: int = Query(default=30, ge=0, 
 
 
 @router.get("/apple/energy", response_model=AppleEnergyResponse)
-async def get_apple_energy(request: Request, days: int = Query(default=30, ge=0, le=2200)):
-    conn = _get_db(request)
+async def get_apple_energy(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
     rows = query_daily_energy(conn, days)
     daily = [AppleEnergyDay(**r) for r in rows]
 

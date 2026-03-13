@@ -1,20 +1,18 @@
-from fastapi import APIRouter, Query, Request, HTTPException
+from fastapi import APIRouter, Query, Request
 
 from apple_health_db import query_workouts
 from apple_health_schemas import (
     AppleWorkout, AppleWorkoutType, AppleWorkoutsSummary, AppleWorkoutsResponse,
 )
+from user_dep import get_apple_db
 
 router = APIRouter(prefix="/api")
 
 
 @router.get("/apple/workouts", response_model=AppleWorkoutsResponse)
-async def get_apple_workouts(request: Request, days: int = Query(default=90, ge=0, le=2200)):
-    db = request.app.state.apple_db
-    if db is None:
-        raise HTTPException(status_code=503, detail="Apple Health data is being parsed. Check /api/apple/parse/status")
-
-    workouts_raw, by_type_raw = query_workouts(db, days)
+async def get_apple_workouts(request: Request, days: int = Query(default=90, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
+    workouts_raw, by_type_raw = query_workouts(conn, days)
 
     workouts = [AppleWorkout(**w) for w in workouts_raw]
     by_type = [AppleWorkoutType(**t) for t in by_type_raw]

@@ -1,8 +1,10 @@
 import { useState, useEffect, useRef } from "react";
 import { useDateRange } from "../context/DateRangeContext";
+import { useUser } from "../context/UserContext";
 
 export default function InsightsPanel() {
   const { days } = useDateRange();
+  const { activeUser } = useUser();
   const [text, setText] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -17,7 +19,7 @@ export default function InsightsPanel() {
     setError(null);
     setText("");
 
-    fetch(`/api/insights?days=${days}`, { signal: controller.signal })
+    fetch(`/api/insights?days=${days}&user=${activeUser}`, { signal: controller.signal })
       .then((res) => {
         if (!res.ok) throw new Error(`API error ${res.status}`);
         const contentType = res.headers.get("content-type") || "";

@@ -1,12 +1,14 @@
 import { useState, useEffect } from "react";
 import { fetchApi } from "../lib/api";
+import { useUser } from "../context/UserContext";
 
 export default function AppleParseStatus() {
+  const { activeUser } = useUser();
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStatus = () => {
-    fetchApi("/apple/parse/status")
+    fetchApi("/apple/parse/status", { user: activeUser })
       .then(setStatus)
       .catch(() => setStatus(null))
       .finally(() => setLoading(false));
@@ -16,12 +18,7 @@ export default function AppleParseStatus() {
     fetchStatus();
     const interval = setInterval(fetchStatus, 5000);
     return () => clearInterval(interval);
-  }, []);
-
-  const handleReparse = async () => {
-    await fetch("/api/apple/parse", { method: "POST" });
-    setStatus({ status: "parsing" });
-  };
+  }, [activeUser]);
 
   if (loading || !status) return null;
 
@@ -52,12 +49,6 @@ export default function AppleParseStatus() {
     <div className="flex items-center gap-2 text-xs text-gray-500">
       <div className="w-2 h-2 rounded-full bg-gray-500" />
       <span>Apple Health not loaded</span>
-      <button
-        onClick={handleReparse}
-        className="text-oura-blue hover:underline"
-      >
-        Parse
-      </button>
     </div>
   );
 }

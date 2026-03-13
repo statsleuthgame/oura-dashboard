@@ -194,14 +194,17 @@ Guidelines:
 
 
 @router.get("/insights")
-async def get_insights(request: Request, days: int = Query(default=7, ge=0, le=2200)):
+async def get_insights(request: Request, days: int = Query(default=7, ge=0, le=2200), user: str = Query(default="cody")):
+    from user_dep import get_oura, get_user_key
     settings = get_settings()
 
     if not settings.anthropic_api_key:
         return {"insights": None, "error": "No Anthropic API key configured. Add ANTHROPIC_API_KEY to your .env file."}
 
-    oura = request.app.state.oura
-    apple_db = request.app.state.apple_db
+    key = get_user_key(request, user)
+    profile = request.app.state.users[key]
+    oura = profile["oura"]
+    apple_db = profile["apple_db"]
 
     oura_days = days if days > 0 else 2200
     end_date = date.today().isoformat()
@@ -220,6 +223,7 @@ async def get_insights(request: Request, days: int = Query(default=7, ge=0, le=2
         return {"insights": "Not enough data to generate insights. Try a longer time range."}
 
     range_label = f"last {days} days" if days > 0 else "all available data"
+    user_name = profile["name"]
 
     client = anthropic.Anthropic(api_key=settings.anthropic_api_key)
 
@@ -230,7 +234,7 @@ async def get_insights(request: Request, days: int = Query(default=7, ge=0, le=2
             system=SYSTEM_PROMPT,
             messages=[{
                 "role": "user",
-                "content": f"Analyze this person's health data for the {range_label}. Today is {date.today().isoformat()}.\n\n{data_summary}",
+                "content": f"Analyze {user_name}'s health data for the {range_label}. Today is {date.today().isoformat()}.\n\n{data_summary}",
             }],
         ) as stream:
             for text in stream.text_stream:

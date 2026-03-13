@@ -4,17 +4,18 @@ from datetime import date, timedelta
 from fastapi import APIRouter, Query, Request
 
 from schemas import SleepDay, SleepSummary, SleepResponse
+from user_dep import get_oura
 
 router = APIRouter(prefix="/api")
 
 
 @router.get("/sleep", response_model=SleepResponse)
-async def get_sleep(request: Request, days: int = Query(default=7, ge=0, le=2200)):
+async def get_sleep(request: Request, days: int = Query(default=7, ge=0, le=2200), user: str = Query(default="cody")):
     effective = days if days > 0 else 2200
     end_date = date.today().isoformat()
     start_date = (date.today() - timedelta(days=effective)).isoformat()
 
-    oura = request.app.state.oura
+    oura = get_oura(request, user)
 
     # Fetch both endpoints: sleep periods (durations) and daily_sleep (scores)
     raw, daily_scores_raw = await asyncio.gather(
@@ -34,14 +35,12 @@ async def get_sleep(request: Request, days: int = Query(default=7, ge=0, le=2200
     daily = []
     for record in raw:
         day = record.get("day", "")
-        # Oura returns durations in seconds for sleep periods
         total_seconds = record.get("total_sleep_duration", 0) or 0
         rem_seconds = record.get("rem_sleep_duration", 0) or 0
         deep_seconds = record.get("deep_sleep_duration", 0) or 0
         light_seconds = record.get("light_sleep_duration", 0) or 0
         latency_seconds = record.get("latency", 0) or record.get("sleep_onset_latency", 0) or 0
 
-        # Get score and contributors from daily_sleep endpoint
         contribs = contributor_by_day.get(day, {})
 
         daily.append(SleepDay(
@@ -57,10 +56,8 @@ async def get_sleep(request: Request, days: int = Query(default=7, ge=0, le=2200
             restfulness=contribs.get("restfulness"),
         ))
 
-    # Sort by date
     daily.sort(key=lambda d: d.day)
 
-    # Compute summary
     scores = [d.score for d in daily if d.score is not None]
     efficiencies = [d.efficiency for d in daily if d.efficiency is not None]
 

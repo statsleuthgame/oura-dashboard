@@ -22,12 +22,13 @@ METRIC_KEYS = [
 
 
 @router.get("/correlations", response_model=CorrelationsResponse)
-async def get_correlations(request: Request, days: int = Query(default=30, ge=0, le=2200)):
+async def get_correlations(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    from user_dep import get_oura, get_user_key
     oura_days = days if days > 0 else 2200
     end_date = date.today().isoformat()
     start_date = (date.today() - timedelta(days=oura_days)).isoformat()
 
-    oura = request.app.state.oura
+    oura = get_oura(request, user)
 
     # Fetch Oura datasets in parallel
     sleep_data, readiness_data, activity_data = await asyncio.gather(
@@ -71,7 +72,8 @@ async def get_correlations(request: Request, days: int = Query(default=30, ge=0,
         by_day[day]["active_calories"] = record.get("active_calories")
 
     # Add Apple Health data if available
-    apple_db = request.app.state.apple_db
+    key = get_user_key(request, user)
+    apple_db = request.app.state.users[key]["apple_db"]
     if apple_db is not None:
         apple_days = days
 

@@ -1,9 +1,11 @@
 import { useState, useEffect } from "react";
 import { fetchApi } from "../lib/api";
 import { useDateRange } from "../context/DateRangeContext";
+import { useUser } from "../context/UserContext";
 
 export function useOuraData(endpoint) {
   const { days } = useDateRange();
+  const { activeUser } = useUser();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -13,7 +15,7 @@ export function useOuraData(endpoint) {
     setLoading(true);
     setError(null);
 
-    fetchApi(endpoint, { days })
+    fetchApi(endpoint, { days, user: activeUser })
       .then((result) => {
         if (!cancelled) {
           setData(result);
@@ -30,7 +32,7 @@ export function useOuraData(endpoint) {
     return () => {
       cancelled = true;
     };
-  }, [endpoint, days]);
+  }, [endpoint, days, activeUser]);
 
   return { data, loading, error };
 }

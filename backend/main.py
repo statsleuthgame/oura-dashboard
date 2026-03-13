@@ -23,37 +23,44 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     settings = get_settings()
 
-    # Oura client
-    app.state.oura = OuraClient(
-        token=settings.oura_api_token,
-        base_url=settings.oura_base_url,
-    )
+    # Multi-user setup
+    app.state.users = {}
+    for user_cfg in settings.get_users():
+        oura = OuraClient(token=user_cfg.oura_token, base_url=settings.oura_base_url)
+        apple_db = None
+        db_path = user_cfg.db_path
+        xml_path = user_cfg.xml_path
 
-    # Apple Health DB
-    app.state.apple_db = None
-    db_path = settings.apple_health_db_path
-    xml_path = settings.apple_health_export_path
+        if is_parsed(db_path):
+            logger.info(f"[{user_cfg.name}] Apple Health DB found, loading...")
+            apple_db = get_connection(db_path)
+        elif Path(xml_path).exists():
+            logger.info(f"[{user_cfg.name}] Apple Health export found, parsing in background...")
 
-    if is_parsed(db_path):
-        logger.info("Apple Health DB found, loading...")
-        app.state.apple_db = get_connection(db_path)
-    elif Path(xml_path).exists():
-        logger.info("Apple Health export found, parsing in background...")
+            def _parse(xp=xml_path, dp=db_path, key=user_cfg.key):
+                parse_export(xp, dp)
+                app.state.users[key]["apple_db"] = get_connection(dp)
+                logger.info(f"[{key}] Apple Health DB ready")
 
-        def _parse():
-            parse_export(xml_path, db_path)
-            app.state.apple_db = get_connection(db_path)
-            logger.info("Apple Health DB ready")
+            thread = threading.Thread(target=_parse, daemon=True)
+            thread.start()
+        else:
+            logger.warning(f"[{user_cfg.name}] No Apple Health export found at {xml_path}")
 
-        thread = threading.Thread(target=_parse, daemon=True)
-        thread.start()
-    else:
-        logger.warning(f"No Apple Health export found at {xml_path}")
+        app.state.users[user_cfg.key] = {
+            "name": user_cfg.name,
+            "oura": oura,
+            "apple_db": apple_db,
+        }
+
+    logger.info(f"Users loaded: {list(app.state.users.keys())}")
 
     yield
-    await app.state.oura.close()
-    if app.state.apple_db is not None:
-        app.state.apple_db.close()
+
+    for profile in app.state.users.values():
+        await profile["oura"].close()
+        if profile["apple_db"] is not None:
+            profile["apple_db"].close()
 
 
 app = FastAPI(title="Health Dashboard API", lifespan=lifespan)
@@ -65,6 +72,13 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+
+# User list endpoint
+@app.get("/api/users")
+async def list_users():
+    return [{"key": k, "name": v["name"]} for k, v in app.state.users.items()]
+
 
 # Oura routes
 app.include_router(sleep.router)

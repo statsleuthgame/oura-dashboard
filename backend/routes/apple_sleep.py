@@ -1,18 +1,16 @@
-from fastapi import APIRouter, Query, Request, HTTPException
+from fastapi import APIRouter, Query, Request
 
 from apple_health_db import query_daily_sleep
 from apple_health_schemas import AppleSleepDay, AppleSleepSummary, AppleSleepResponse
+from user_dep import get_apple_db
 
 router = APIRouter(prefix="/api")
 
 
 @router.get("/apple/sleep", response_model=AppleSleepResponse)
-async def get_apple_sleep(request: Request, days: int = Query(default=30, ge=0, le=2200)):
-    db = request.app.state.apple_db
-    if db is None:
-        raise HTTPException(status_code=503, detail="Apple Health data is being parsed. Check /api/apple/parse/status")
-
-    rows = query_daily_sleep(db, days)
+async def get_apple_sleep(request: Request, days: int = Query(default=30, ge=0, le=2200), user: str = Query(default="cody")):
+    conn = get_apple_db(request, user)
+    rows = query_daily_sleep(conn, days)
     daily = [AppleSleepDay(**r) for r in rows]
 
     totals = [d.total_sleep for d in daily if d.total_sleep > 0]

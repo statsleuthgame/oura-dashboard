@@ -5,8 +5,10 @@ dist/
 .venv/
 *.pyc
 .DS_Store
-# Ignore all .db except apple_health.db (tracked via LFS)
+# Ignore all .db except apple_health DBs (tracked via LFS)
 *.db
 !backend/apple_health.db
+!backend/apple_health_cody.db
+!backend/apple_health_stef.db
 apple_health_export/
 backend/static/
