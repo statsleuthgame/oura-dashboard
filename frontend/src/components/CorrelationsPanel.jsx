@@ -13,6 +13,11 @@ const METRIC_LABELS = {
   activity_score: "Activity Score",
   steps: "Steps",
   active_calories: "Active Cal",
+  apple_avg_hr: "Avg HR",
+  apple_hrv: "HRV",
+  apple_resting_hr: "Resting HR",
+  apple_steps: "Steps",
+  apple_active_cal: "Active Cal",
 };
 
 export default function CorrelationsPanel() {

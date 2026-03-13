@@ -1,4 +1,5 @@
 import DateRangeSelector from "./DateRangeSelector";
+import AppleParseStatus from "./AppleParseStatus";
 
 export default function Layout({ children }) {
   return (
@@ -9,9 +10,12 @@ export default function Layout({ children }) {
             <div className="w-8 h-8 rounded-full bg-gradient-to-br from-oura-blue to-oura-purple flex items-center justify-center">
               <div className="w-4 h-4 rounded-full border-2 border-white/80" />
             </div>
-            <h1 className="text-xl font-semibold text-white tracking-tight">
-              Oura Dashboard
-            </h1>
+            <div>
+              <h1 className="text-xl font-semibold text-white tracking-tight">
+                Health Dashboard
+              </h1>
+              <AppleParseStatus />
+            </div>
           </div>
           <DateRangeSelector />
         </div>

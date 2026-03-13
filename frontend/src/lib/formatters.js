@@ -20,3 +20,16 @@ export function formatNumber(n) {
   if (n == null) return "--";
   return n.toLocaleString();
 }
+
+export function formatDistance(km) {
+  if (km == null) return "--";
+  const mi = km * 0.621371;
+  return `${mi.toFixed(1)} mi`;
+}
+
+export function formatWorkoutDuration(seconds) {
+  if (seconds == null) return "--";
+  const h = Math.floor(seconds / 3600);
+  const m = Math.floor((seconds % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}

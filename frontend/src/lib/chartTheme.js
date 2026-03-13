@@ -6,6 +6,12 @@ export const COLORS = {
   yellow: "#F39C12",
   lightBlue: "#74B9FF",
   teal: "#00B894",
+  orange: "#FF9500",
+  pink: "#FF2D55",
+  cyan: "#5AC8FA",
+  appleRed: "#FF3B30",
+  appleGreen: "#34C759",
+  appleBlue: "#007AFF",
 };
 
 export const tooltipStyle = {

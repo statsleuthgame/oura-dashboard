@@ -5,6 +5,10 @@ import numpy as np
 from fastapi import APIRouter, Query, Request
 
 from schemas import CorrelationPair, CorrelationsResponse
+from apple_health_db import (
+    query_daily_heart_rate, query_daily_hrv, query_daily_resting_hr,
+    query_daily_steps, query_daily_energy,
+)
 
 router = APIRouter(prefix="/api")
 
@@ -12,17 +16,20 @@ METRIC_KEYS = [
     "sleep_score", "total_sleep", "deep_sleep", "efficiency",
     "readiness_score", "hrv_balance", "resting_heart_rate",
     "activity_score", "steps", "active_calories",
+    "apple_avg_hr", "apple_hrv", "apple_resting_hr",
+    "apple_steps", "apple_active_cal",
 ]
 
 
 @router.get("/correlations", response_model=CorrelationsResponse)
-async def get_correlations(request: Request, days: int = Query(default=30, ge=7, le=90)):
+async def get_correlations(request: Request, days: int = Query(default=30, ge=7, le=2200)):
+    oura_days = min(days, 90)
     end_date = date.today().isoformat()
-    start_date = (date.today() - timedelta(days=days)).isoformat()
+    start_date = (date.today() - timedelta(days=oura_days)).isoformat()
 
     oura = request.app.state.oura
 
-    # Fetch all three datasets in parallel
+    # Fetch Oura datasets in parallel
     sleep_data, readiness_data, activity_data = await asyncio.gather(
         oura.fetch("/v2/usercollection/sleep", start_date, end_date),
         oura.fetch("/v2/usercollection/daily_readiness", start_date, end_date),
@@ -63,18 +70,49 @@ async def get_correlations(request: Request, days: int = Query(default=30, ge=7,
         by_day[day]["steps"] = record.get("steps")
         by_day[day]["active_calories"] = record.get("active_calories")
 
-    # Compute correlations
-    pairs: list[CorrelationPair] = []
-    matrix: dict[str, dict[str, float | None]] = {k: {} for k in METRIC_KEYS}
+    # Add Apple Health data if available
+    apple_db = request.app.state.apple_db
+    if apple_db is not None:
+        # Use same day range as Oura for fair correlation
+        apple_days = oura_days
 
-    for i, key_a in enumerate(METRIC_KEYS):
-        for j, key_b in enumerate(METRIC_KEYS):
+        for row in query_daily_heart_rate(apple_db, apple_days):
+            day = row["day"]
+            by_day.setdefault(day, {})
+            by_day[day]["apple_avg_hr"] = row.get("avg_hr")
+
+        for row in query_daily_hrv(apple_db, apple_days):
+            day = row["day"]
+            by_day.setdefault(day, {})
+            by_day[day]["apple_hrv"] = row.get("avg_hrv")
+
+        for row in query_daily_resting_hr(apple_db, apple_days):
+            day = row["day"]
+            by_day.setdefault(day, {})
+            by_day[day]["apple_resting_hr"] = row.get("resting_hr")
+
+        for row in query_daily_steps(apple_db, apple_days):
+            day = row["day"]
+            by_day.setdefault(day, {})
+            by_day[day]["apple_steps"] = row.get("steps")
+
+        for row in query_daily_energy(apple_db, apple_days):
+            day = row["day"]
+            by_day.setdefault(day, {})
+            by_day[day]["apple_active_cal"] = row.get("active_cal")
+
+    # Compute correlations
+    active_keys = METRIC_KEYS if apple_db is not None else METRIC_KEYS[:10]
+    pairs: list[CorrelationPair] = []
+    matrix: dict[str, dict[str, float | None]] = {k: {} for k in active_keys}
+
+    for i, key_a in enumerate(active_keys):
+        for j, key_b in enumerate(active_keys):
             if j <= i:
                 if i == j:
                     matrix[key_a][key_b] = 1.0
                 continue
 
-            # Extract paired values where both are non-None
             vals_a = []
             vals_b = []
             for day_data in by_day.values():
@@ -93,7 +131,6 @@ async def get_correlations(request: Request, days: int = Query(default=30, ge=7,
             arr_a = np.array(vals_a)
             arr_b = np.array(vals_b)
 
-            # Skip if no variance
             if np.std(arr_a) == 0 or np.std(arr_b) == 0:
                 matrix[key_a][key_b] = None
                 matrix[key_b][key_a] = None
@@ -112,7 +149,6 @@ async def get_correlations(request: Request, days: int = Query(default=30, ge=7,
                 n=n,
             ))
 
-    # Sort by absolute correlation strength
     pairs.sort(key=lambda p: abs(p.r), reverse=True)
 
     return CorrelationsResponse(pairs=pairs, matrix=matrix)

@@ -9,6 +9,11 @@ const METRIC_LABELS = {
   activity_score: "Activity Score",
   steps: "Steps",
   active_calories: "Active Cal",
+  apple_avg_hr: "Avg HR",
+  apple_hrv: "HRV",
+  apple_resting_hr: "Resting HR",
+  apple_steps: "Steps",
+  apple_active_cal: "Active Cal",
 };
 
 function getColor(r) {
@@ -23,7 +28,7 @@ function getColor(r) {
 }
 
 export default function CorrelationHeatmap({ matrix }) {
-  const metrics = Object.keys(METRIC_LABELS);
+  const metrics = Object.keys(matrix || {});
 
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5 overflow-x-auto">
