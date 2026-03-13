@@ -18,7 +18,7 @@ export default function Layout({ children }) {
               <AppleParseStatus />
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex flex-col items-end gap-2 sm:flex-row sm:items-center sm:gap-3">
             <UserToggle />
             <DateRangeSelector />
           </div>
