@@ -29,26 +29,36 @@ def _summarize_list(rows, key, label):
     }
 
 
-def _build_data_summary(oura_sleep, oura_readiness, oura_activity, apple_db, days):
+def _build_data_summary(oura_sleep, oura_readiness, oura_activity, apple_db, days, oura_sleep_scores=None):
     """Build a structured text summary of all health data for the prompt."""
     sections = []
 
-    # Oura Sleep
+    # Oura Sleep — aggregate by day first (multiple records per day = naps + main sleep)
     if oura_sleep:
-        scores = [r.get("score") for r in oura_sleep if r.get("score")]
-        total_sleeps = [
-            round((r.get("total_sleep_duration", 0) or 0) / 3600, 1)
-            for r in oura_sleep if r.get("total_sleep_duration")
-        ]
-        deep_sleeps = [
-            round((r.get("deep_sleep_duration", 0) or 0) / 60, 1)
-            for r in oura_sleep if r.get("deep_sleep_duration")
-        ]
-        efficiencies = [r.get("efficiency") for r in oura_sleep if r.get("efficiency")]
+        by_day: dict[str, dict] = {}
+        for r in oura_sleep:
+            day = r.get("day", "")
+            if not day:
+                continue
+            if day not in by_day:
+                by_day[day] = {"total": 0, "deep": 0, "efficiency": None, "max_dur": 0}
+            total_sec = r.get("total_sleep_duration", 0) or 0
+            by_day[day]["total"] += total_sec
+            by_day[day]["deep"] += r.get("deep_sleep_duration", 0) or 0
+            if total_sec > by_day[day]["max_dur"]:
+                by_day[day]["efficiency"] = r.get("efficiency")
+                by_day[day]["max_dur"] = total_sec
 
-        lines = ["## Oura Sleep (last 90 days max)"]
+        total_sleeps = [round(d["total"] / 3600, 1) for d in by_day.values() if d["total"] > 0]
+        deep_sleeps = [round(d["deep"] / 60, 1) for d in by_day.values() if d["deep"] > 0]
+        efficiencies = [d["efficiency"] for d in by_day.values() if d["efficiency"] is not None]
+        scores = []
+        if oura_sleep_scores:
+            scores = [oura_sleep_scores[day] for day in by_day if day in oura_sleep_scores and oura_sleep_scores[day] is not None]
+
+        lines = [f"## Oura Sleep ({len(by_day)} nights)"]
         if scores:
-            lines.append(f"- Sleep Score: avg {sum(scores)/len(scores):.0f}, range {min(scores)}-{max(scores)}, {len(scores)} nights")
+            lines.append(f"- Sleep Score: avg {sum(scores)/len(scores):.0f}, range {min(scores)}-{max(scores)}")
         if total_sleeps:
             lines.append(f"- Total Sleep: avg {sum(total_sleeps)/len(total_sleeps):.1f}h, range {min(total_sleeps):.1f}-{max(total_sleeps):.1f}h")
         if deep_sleeps:
@@ -56,12 +66,13 @@ def _build_data_summary(oura_sleep, oura_readiness, oura_activity, apple_db, day
         if efficiencies:
             lines.append(f"- Efficiency: avg {sum(efficiencies)/len(efficiencies):.0f}%, range {min(efficiencies)}-{max(efficiencies)}%")
 
-        # Trend: last 7 vs previous 7
-        if len(scores) >= 14:
-            recent = scores[-7:]
-            prev = scores[-14:-7]
+        # Trend: compare last 7 days vs previous 7 days of total sleep
+        sorted_days = sorted(by_day.keys())
+        if len(sorted_days) >= 14:
+            recent = [by_day[d]["total"] / 3600 for d in sorted_days[-7:]]
+            prev = [by_day[d]["total"] / 3600 for d in sorted_days[-14:-7]]
             diff = sum(recent)/len(recent) - sum(prev)/len(prev)
-            lines.append(f"- 7-day trend: {'up' if diff > 0 else 'down'} {abs(diff):.1f} points vs previous week")
+            lines.append(f"- 7-day trend: {'up' if diff > 0 else 'down'} {abs(diff):.1f}h vs previous week")
 
         sections.append("\n".join(lines))
 
@@ -211,13 +222,17 @@ async def get_insights(request: Request, days: int = Query(default=7, ge=0, le=2
     start_date = (date.today() - timedelta(days=oura_days)).isoformat()
 
     # Fetch Oura data in parallel
-    sleep_data, readiness_data, activity_data = await asyncio.gather(
+    sleep_data, daily_sleep_data, readiness_data, activity_data = await asyncio.gather(
         oura.fetch("/v2/usercollection/sleep", start_date, end_date),
+        oura.fetch("/v2/usercollection/daily_sleep", start_date, end_date),
         oura.fetch("/v2/usercollection/daily_readiness", start_date, end_date),
         oura.fetch("/v2/usercollection/daily_activity", start_date, end_date),
     )
 
-    data_summary = _build_data_summary(sleep_data, readiness_data, activity_data, apple_db, days)
+    # Build sleep score lookup
+    sleep_scores = {r.get("day"): r.get("score") for r in daily_sleep_data if r.get("day")}
+
+    data_summary = _build_data_summary(sleep_data, readiness_data, activity_data, apple_db, days, sleep_scores)
 
     if not data_summary.strip():
         return {"insights": "Not enough data to generate insights. Try a longer time range."}
