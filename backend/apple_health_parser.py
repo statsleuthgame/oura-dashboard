@@ -242,6 +242,22 @@ def parse_export(xml_path: str, db_path: str):
             total_energy = _float_or_none(elem.get("totalEnergyBurned"))
             source = elem.get("sourceName", "")
 
+            # Check WorkoutStatistics children for energy/distance
+            for stat in elem.findall("WorkoutStatistics"):
+                stat_type = stat.get("type", "")
+                if stat_type == "HKQuantityTypeIdentifierActiveEnergyBurned":
+                    active_cal = _float_or_none(stat.get("sum"))
+                    if active_cal is not None:
+                        total_energy = (total_energy or 0) + active_cal
+                elif stat_type == "HKQuantityTypeIdentifierBasalEnergyBurned":
+                    basal_cal = _float_or_none(stat.get("sum"))
+                    if basal_cal is not None:
+                        total_energy = (total_energy or 0) + basal_cal
+                elif stat_type == "HKQuantityTypeIdentifierDistanceWalkingRunning":
+                    dist = _float_or_none(stat.get("sum"))
+                    if dist is not None and total_dist is None:
+                        total_dist = dist
+
             buffers["workouts"].append(
                 (workout_type, start_date, end_date, duration_sec, total_dist, total_energy, source)
             )
