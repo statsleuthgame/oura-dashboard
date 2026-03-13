@@ -75,6 +75,7 @@ The dashboard will be available at `http://localhost:5173`.
 ## API Endpoints
 
 ### Oura Ring
+
 | Endpoint | Description |
 |---|---|
 | `GET /api/sleep?days=7` | Sleep scores, stages, efficiency |
@@ -83,6 +84,7 @@ The dashboard will be available at `http://localhost:5173`.
 | `GET /api/heartrate?days=7` | Heart rate data (auto-downsampled) |
 
 ### Apple Health
+
 | Endpoint | Description |
 |---|---|
 | `GET /api/apple/heart-rate?days=30` | Daily avg/min/max heart rate |
@@ -96,6 +98,7 @@ The dashboard will be available at `http://localhost:5173`.
 | `GET /api/apple/spo2?days=30` | Blood oxygen |
 
 ### Cross-source
+
 | Endpoint | Description |
 |---|---|
 | `GET /api/correlations?days=30` | Cross-metric correlation matrix |
