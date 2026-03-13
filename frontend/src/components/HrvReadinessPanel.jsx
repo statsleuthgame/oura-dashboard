@@ -19,14 +19,15 @@ export default function HrvReadinessPanel() {
           color="text-oura-green"
         />
         <MetricCard
-          label="Avg HRV Balance"
+          label="HRV Balance Score"
           value={summary?.avg_hrv_balance}
+          unit="/100"
           color="text-teal-400"
         />
         <MetricCard
-          label="Avg Resting HR"
+          label="Resting HR Score"
           value={summary?.avg_resting_hr}
-          unit="bpm"
+          unit="/100"
           color="text-oura-red"
         />
       </div>

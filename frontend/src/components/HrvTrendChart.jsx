@@ -13,7 +13,7 @@ import { formatDate } from "../lib/formatters";
 export default function HrvTrendChart({ data }) {
   return (
     <div className="bg-white/5 backdrop-blur border border-white/10 rounded-2xl p-5">
-      <h3 className="text-sm font-medium text-gray-400 mb-4">HRV Balance</h3>
+      <h3 className="text-sm font-medium text-gray-400 mb-4">HRV Balance Score</h3>
       <ResponsiveContainer width="100%" height={240}>
         <AreaChart data={data}>
           <defs>

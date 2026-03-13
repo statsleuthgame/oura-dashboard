@@ -82,11 +82,16 @@ def _build_data_summary(oura_sleep, oura_readiness, oura_activity, apple_db, day
         hrv_vals = [r.get("contributors", {}).get("hrv_balance") for r in oura_readiness]
         hrv_vals = [v for v in hrv_vals if v is not None]
 
+        rhr_vals = [r.get("contributors", {}).get("resting_heart_rate") for r in oura_readiness]
+        rhr_vals = [v for v in rhr_vals if v is not None]
+
         lines = ["## Oura Readiness"]
         if scores:
             lines.append(f"- Readiness Score: avg {sum(scores)/len(scores):.0f}, range {min(scores)}-{max(scores)}")
         if hrv_vals:
-            lines.append(f"- HRV Balance: avg {sum(hrv_vals)/len(hrv_vals):.0f}, range {min(hrv_vals)}-{max(hrv_vals)}")
+            lines.append(f"- HRV Balance Score (0-100, not ms): avg {sum(hrv_vals)/len(hrv_vals):.0f}, range {min(hrv_vals)}-{max(hrv_vals)}")
+        if rhr_vals:
+            lines.append(f"- Resting HR Score (0-100, higher=better, not bpm): avg {sum(rhr_vals)/len(rhr_vals):.0f}, range {min(rhr_vals)}-{max(rhr_vals)}")
 
         if len(scores) >= 14:
             recent = scores[-7:]

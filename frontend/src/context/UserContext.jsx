@@ -5,6 +5,7 @@ const UserContext = createContext();
 export function UserProvider({ children }) {
   const [users, setUsers] = useState([]);
   const [activeUser, setActiveUser] = useState("cody");
+  const [view, setView] = useState("dashboard"); // "dashboard" | "compare"
 
   useEffect(() => {
     fetch("/api/users")
@@ -19,7 +20,7 @@ export function UserProvider({ children }) {
   }, []);
 
   return (
-    <UserContext.Provider value={{ users, activeUser, setActiveUser }}>
+    <UserContext.Provider value={{ users, activeUser, setActiveUser, view, setView }}>
       {children}
     </UserContext.Provider>
   );
