@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query, Request
 
 from schemas import ReadinessDay, ReadinessSummary, ReadinessResponse
 from user_dep import get_oura
+from oura_aggregate import group_oura_daily
 
 router = APIRouter(prefix="/api")
 
@@ -43,5 +44,7 @@ async def get_readiness(request: Request, days: int = Query(default=7, ge=0, le=
         avg_hrv_balance=round(sum(hrv_vals) / len(hrv_vals), 1) if hrv_vals else None,
         avg_resting_hr=round(sum(hr_vals) / len(hr_vals), 1) if hr_vals else None,
     )
+
+    daily = group_oura_daily(daily, days, ["score", "hrv_balance", "resting_heart_rate"])
 
     return ReadinessResponse(summary=summary, daily=daily)

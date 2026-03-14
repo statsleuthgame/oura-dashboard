@@ -33,3 +33,9 @@ export function formatWorkoutDuration(seconds) {
   const m = Math.floor((seconds % 3600) / 60);
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
+
+export function periodLabel(days) {
+  if (days === 0 || days > 365) return "mo";
+  if (days > 90) return "wk";
+  return "day";
+}

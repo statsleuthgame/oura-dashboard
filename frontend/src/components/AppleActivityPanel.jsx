@@ -3,14 +3,17 @@ import PanelWrapper from "./PanelWrapper";
 import MetricCard from "./MetricCard";
 import AppleStepsChart from "./AppleStepsChart";
 import AppleEnergyChart from "./AppleEnergyChart";
-import { formatNumber, roundTo } from "../lib/formatters";
+import { formatNumber, roundTo, periodLabel } from "../lib/formatters";
+import { useDateRange } from "../context/DateRangeContext";
 
 export default function AppleActivityPanel() {
   const { data: steps, loading: stepsLoad, error: stepsErr } = useOuraData("/apple/steps");
   const { data: energy, loading: energyLoad, error: energyErr } = useOuraData("/apple/energy");
+  const { days } = useDateRange();
 
   const loading = stepsLoad || energyLoad;
   const error = stepsErr || energyErr;
+  const per = periodLabel(days);
 
   return (
     <PanelWrapper title="Activity" loading={loading} error={error}>
@@ -29,19 +32,19 @@ export default function AppleActivityPanel() {
         <MetricCard
           label="Avg Active Cal"
           value={energy?.summary?.avg_active_cal ? formatNumber(Math.round(energy.summary.avg_active_cal)) : null}
-          unit="cal/day"
+          unit={`cal/${per}`}
           color="text-apple-red"
         />
         <MetricCard
           label="Avg Total Cal"
           value={energy?.summary?.avg_total_cal ? formatNumber(Math.round(energy.summary.avg_total_cal)) : null}
-          unit="cal/day"
+          unit={`cal/${per}`}
           color="text-white"
         />
         <MetricCard
           label="Avg Distance"
           value={steps?.summary?.avg_distance ? `${(steps.summary.avg_distance * 0.621371).toFixed(1)}` : null}
-          unit="mi/day"
+          unit={`mi/${per}`}
           color="text-apple-blue"
         />
         <MetricCard

@@ -17,19 +17,28 @@ def _date_range(days: int) -> tuple[str, str] | None:
     return start.isoformat(), end.isoformat()
 
 
-def _use_weekly(days: int) -> bool:
-    return days > 90 or days == 0
+def _aggregation_level(days: int) -> str:
+    """Return 'daily', 'weekly', or 'monthly' based on the date range."""
+    if days == 0 or days > 365:
+        return "monthly"
+    if days > 90:
+        return "weekly"
+    return "daily"
 
 
 def _group_clause(days: int) -> str:
-    if _use_weekly(days):
+    level = _aggregation_level(days)
+    if level == "monthly":
+        return "strftime('%Y-%m', start_date)"
+    if level == "weekly":
         return "strftime('%Y-%W', start_date)"
     return "DATE(start_date)"
 
 
 def _day_select(days: int) -> str:
-    """Return a SQL expression for the display date (proper date even for weekly)."""
-    if _use_weekly(days):
+    """Return a SQL expression for the display date (proper date even for grouped)."""
+    level = _aggregation_level(days)
+    if level in ("weekly", "monthly"):
         return "MIN(DATE(start_date))"
     return "DATE(start_date)"
 
@@ -163,27 +172,32 @@ def query_daily_sleep(conn: sqlite3.Connection, days: int) -> list[dict]:
         n["total_sleep"] = round(n["core"] + n["deep"] + n["rem"] + n["asleep"], 1)
         result.append(n)
 
-    # If > 90 days, aggregate to weekly
-    if _use_weekly(days) and len(result) > 90:
-        return _weekly_avg_sleep(result)
+    # Aggregate if needed
+    level = _aggregation_level(days)
+    if level == "monthly" and len(result) > 90:
+        return _grouped_avg_sleep(result, "monthly")
+    if level == "weekly" and len(result) > 90:
+        return _grouped_avg_sleep(result, "weekly")
     return result
 
 
-def _weekly_avg_sleep(daily: list[dict]) -> list[dict]:
+def _grouped_avg_sleep(daily: list[dict], level: str) -> list[dict]:
     from collections import defaultdict
-    weeks: dict[str, list[dict]] = defaultdict(list)
+    groups: dict[str, list[dict]] = defaultdict(list)
     for d in daily:
-        # Use ISO week
         dt = date.fromisoformat(d["day"])
-        week_key = f"{dt.isocalendar()[0]}-{dt.isocalendar()[1]:02d}"
-        weeks[week_key].append(d)
+        if level == "monthly":
+            key = f"{dt.year}-{dt.month:02d}"
+        else:
+            key = f"{dt.isocalendar()[0]}-{dt.isocalendar()[1]:02d}"
+        groups[key].append(d)
 
     result = []
-    for wk in sorted(weeks):
-        entries = weeks[wk]
+    for grp in sorted(groups):
+        entries = groups[grp]
         n = len(entries)
         result.append({
-            "day": entries[0]["day"],  # first day of the week as label
+            "day": entries[0]["day"],
             "core": round(sum(e["core"] for e in entries) / n, 1),
             "deep": round(sum(e["deep"] for e in entries) / n, 1),
             "rem": round(sum(e["rem"] for e in entries) / n, 1),

@@ -1,15 +1,19 @@
 import { useCompareData } from "../hooks/useCompareData";
 import { useUser } from "../context/UserContext";
+import { useDateRange } from "../context/DateRangeContext";
 import CompareChart from "./CompareChart";
-import { formatMinutes } from "../lib/formatters";
+import { formatMinutes, periodLabel } from "../lib/formatters";
 
 const SLEEP_TOTAL_KEY = (row) =>
   row.total_sleep != null ? Math.round((row.total_sleep / 60) * 10) / 10 : null;
 
 const STEPS_KEY = (row) => row.value ?? row.steps ?? null;
 
+const STEP_TITLES = { day: "Daily Steps", wk: "Weekly Avg Steps", mo: "Monthly Avg Steps" };
+
 export default function CompareView() {
   const { users } = useUser();
+  const { days } = useDateRange();
 
   const sleep = useCompareData("/sleep", "score");
   const sleepDuration = useCompareData("/sleep", SLEEP_TOTAL_KEY);
@@ -88,7 +92,7 @@ export default function CompareView() {
             />
             <CompareChart
               data={steps.data}
-              title="Daily Steps"
+              title={STEP_TITLES[periodLabel(days)]}
               formatter={(v) => v?.toLocaleString()}
             />
             <CompareChart

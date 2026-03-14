@@ -5,6 +5,7 @@ from fastapi import APIRouter, Query, Request
 
 from schemas import SleepDay, SleepSummary, SleepResponse
 from user_dep import get_oura
+from oura_aggregate import group_oura_daily
 
 router = APIRouter(prefix="/api")
 
@@ -82,5 +83,7 @@ async def get_sleep(request: Request, days: int = Query(default=7, ge=0, le=2200
         avg_efficiency=round(sum(efficiencies) / len(efficiencies), 1) if efficiencies else None,
         total_nights=len(daily),
     )
+
+    daily = group_oura_daily(daily, days, ["score", "deep_sleep", "rem_sleep", "light_sleep", "total_sleep", "efficiency", "latency"])
 
     return SleepResponse(summary=summary, daily=daily)

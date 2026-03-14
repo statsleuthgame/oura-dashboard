@@ -4,6 +4,7 @@ from fastapi import APIRouter, Query, Request
 
 from schemas import ActivityDay, ActivitySummary, ActivityResponse
 from user_dep import get_oura
+from oura_aggregate import group_oura_daily
 
 router = APIRouter(prefix="/api")
 
@@ -51,5 +52,7 @@ async def get_activity(request: Request, days: int = Query(default=7, ge=0, le=2
         avg_calories=round(sum(cals) / len(cals), 1) if cals else None,
         total_active_minutes=round(sum(active_mins), 1),
     )
+
+    daily = group_oura_daily(daily, days, ["score", "active_calories", "total_calories", "steps"])
 
     return ActivityResponse(summary=summary, daily=daily)
